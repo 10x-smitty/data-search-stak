@@ -231,6 +231,12 @@ process_pending_embeddings() {
             local embedding
             embedding=$(echo "$embedding_response" | jq '.data[0].embedding')
             
+            # Truncate embedding to specified dimensions if needed
+            if [ "$OPENAI_DIMS" != "1536" ]; then
+                embedding=$(echo "$embedding" | jq ".[0:$OPENAI_DIMS]")
+                info "Truncated embedding from 1536 to $OPENAI_DIMS dimensions"
+            fi
+            
             # Update document
             if update_document_with_embedding "$doc_index" "$doc_id" "$embedding"; then
                 ((processed++))

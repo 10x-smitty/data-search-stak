@@ -24,15 +24,37 @@ generate_query_embedding() {
     local escaped_query
     escaped_query=$(echo "$query" | jq -R .)
 
-    local payload='{
-        "model": "'"$OPENAI_MODEL"'",
-        "input": '"$escaped_query"'
-    }'
+    # Create JSON payload using jq for proper formatting
+    local payload
+    payload=$(jq -n \
+        --arg model "${OPENAI_MODEL:-text-embedding-3-small}" \
+        --argjson input "$escaped_query" \
+        '{"model": $model, "input": $input}')
 
-    curl -s -X POST https://api.openai.com/v1/embeddings \
+    local response
+    response=$(curl -s -X POST https://api.openai.com/v1/embeddings \
         -H "Authorization: Bearer $OPENAI_API_KEY" \
         -H "Content-Type: application/json" \
-        -d "$payload" | jq '.data[0].embedding'
+        -d "$payload")
+
+    # Check if the response contains an error
+    if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+        echo "Error from OpenAI API:" >&2
+        echo "$response" | jq '.error.message' >&2
+        echo "null"
+        return 1
+    fi
+
+    # Extract embedding
+    local embedding
+    embedding=$(echo "$response" | jq '.data[0].embedding')
+    
+    # Truncate embedding to match index dimensions if needed
+    if [ "${OPENAI_DIMS:-1536}" != "1536" ]; then
+        embedding=$(echo "$embedding" | jq ".[0:${OPENAI_DIMS:-1024}]")
+    fi
+    
+    echo "$embedding"
 }
 
 # Function to perform vector similarity search
@@ -40,34 +62,39 @@ vector_search() {
     local query="$1"
     local k="${2:-5}"
 
-    echo "Generating embedding for query: '$query'"
+    echo "Generating embedding for query: '$query'" >&2
     local query_embedding
     query_embedding=$(generate_query_embedding "$query")
 
     if [ "$query_embedding" == "null" ]; then
-        echo "Failed to generate embedding for query"
+        echo "Failed to generate embedding for query" >&2
         return 1
     fi
 
-    echo "Performing vector similarity search (k=$k)..."
+    echo "Performing vector similarity search (k=$k)..." >&2
 
-    local search_payload='{
-        "knn": {
-            "field": "text_embedding",
-            "query_vector": '"$query_embedding"',
-            "k": '"$k"',
-            "num_candidates": 100
-        },
-        "_source": [
-            "title",
-            "writers",
-            "publishers",
-            "genre",
-            "iswc",
-            "data_source",
-            "searchable_content"
-        ]
-    }'
+    # Create search payload using jq for proper JSON formatting
+    local search_payload
+    search_payload=$(jq -n \
+        --argjson query_vector "$query_embedding" \
+        --argjson k "$k" \
+        '{
+            "knn": {
+                "field": "text_embedding",
+                "query_vector": $query_vector,
+                "k": $k,
+                "num_candidates": 100
+            },
+            "_source": [
+                "title",
+                "writers",
+                "publishers",
+                "genre",
+                "iswc",
+                "data_source",
+                "searchable_content"
+            ]
+        }')
 
     curl -s -k -u "${ELASTIC_USER}:${ELASTIC_PASSWORD}" \
         -X POST "${ELASTIC_HOST}/reconciliation-*/_search" \
@@ -81,6 +108,20 @@ format_results() {
 
     echo "=== VECTOR SIMILARITY SEARCH RESULTS ==="
     echo ""
+
+    # Check if the response is valid JSON
+    if ! echo "$response" | jq . >/dev/null 2>&1; then
+        echo "Error: Invalid JSON response from Elasticsearch"
+        echo "Response: $response"
+        return 1
+    fi
+
+    # Check if the response contains an error
+    if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+        echo "Elasticsearch Error:"
+        echo "$response" | jq -r '.error.reason // .error.type // "Unknown error"'
+        return 1
+    fi
 
     local total_hits
     total_hits=$(echo "$response" | jq -r '.hits.total.value // 0')
@@ -96,12 +137,12 @@ format_results() {
     echo "$response" | jq -r '
         .hits.hits[] |
         "Score: " + (.score | tostring) +
-        "\nTitle: " + ._source.title +
-        "\nWriters: " + ._source.writers +
-        "\nPublishers: " + ._source.publishers +
-        "\nGenre: " + ._source.genre +
-        "\nISWC: " + ._source.iswc +
-        "\nSource: " + ._source.data_source +
+        "\nTitle: " + (._source.title // "N/A") +
+        "\nWriters: " + (._source.writers // "N/A") +
+        "\nPublishers: " + (._source.publishers // "N/A") +
+        "\nGenre: " + (._source.genre // "N/A") +
+        "\nISWC: " + (._source.iswc // "N/A") +
+        "\nSource: " + (._source.data_source // "N/A") +
         "\n" + ("=" * 50) + "\n"
     '
 }
@@ -136,14 +177,19 @@ main() {
             echo "------------------------------"
 
             local response
-            response=$(vector_search "$query" 3)
-
-            if echo "$response" | jq -e '.hits.hits[0]' >/dev/null 2>&1; then
-                echo "✅ Found matches for: '$query'"
-                format_results "$response"
-                echo ""
+            if response=$(vector_search "$query" 3); then
+                if echo "$response" | jq -e '.hits.hits[0]' >/dev/null 2>&1; then
+                    echo "✅ Found matches for: '$query'"
+                    if ! format_results "$response"; then
+                        echo "⚠️  Error formatting results for: '$query'"
+                    fi
+                    echo ""
+                else
+                    echo "❌ No matches found for: '$query'"
+                    echo ""
+                fi
             else
-                echo "❌ No matches found for: '$query'"
+                echo "❌ Failed to perform vector search for: '$query'"
                 echo ""
             fi
 
