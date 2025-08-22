@@ -5,6 +5,7 @@ data/
 logstash-drivers/
 
 # Environment files with potential secrets
+.env
 .env.local
 .env.*.local
 
