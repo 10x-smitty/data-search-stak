@@ -23,12 +23,12 @@ generate_query_embedding() {
     local query="$1"
     local escaped_query
     escaped_query=$(echo "$query" | jq -R .)
-    
+
     local payload='{
         "model": "'"$OPENAI_MODEL"'",
         "input": '"$escaped_query"'
     }'
-    
+
     curl -s -X POST https://api.openai.com/v1/embeddings \
         -H "Authorization: Bearer $OPENAI_API_KEY" \
         -H "Content-Type: application/json" \
@@ -39,18 +39,18 @@ generate_query_embedding() {
 vector_search() {
     local query="$1"
     local k="${2:-5}"
-    
+
     echo "Generating embedding for query: '$query'"
     local query_embedding
     query_embedding=$(generate_query_embedding "$query")
-    
+
     if [ "$query_embedding" == "null" ]; then
         echo "Failed to generate embedding for query"
         return 1
     fi
-    
+
     echo "Performing vector similarity search (k=$k)..."
-    
+
     local search_payload='{
         "knn": {
             "field": "text_embedding",
@@ -61,14 +61,14 @@ vector_search() {
         "_source": [
             "title",
             "writers",
-            "publishers", 
+            "publishers",
             "genre",
             "iswc",
             "data_source",
             "searchable_content"
         ]
     }'
-    
+
     curl -s -k -u "${ELASTIC_USER}:${ELASTIC_PASSWORD}" \
         -X POST "${ELASTIC_HOST}/reconciliation-*/_search" \
         -H "Content-Type: application/json" \
@@ -78,30 +78,30 @@ vector_search() {
 # Function to format search results
 format_results() {
     local response="$1"
-    
+
     echo "=== VECTOR SIMILARITY SEARCH RESULTS ==="
     echo ""
-    
+
     local total_hits
     total_hits=$(echo "$response" | jq -r '.hits.total.value // 0')
-    
+
     if [ "$total_hits" -eq 0 ]; then
         echo "No results found"
         return
     fi
-    
+
     echo "Found $total_hits matches:"
     echo ""
-    
+
     echo "$response" | jq -r '
-        .hits.hits[] | 
-        "Score: " + (.score | tostring) + 
-        "\nTitle: " + ._source.title + 
-        "\nWriters: " + ._source.writers + 
-        "\nPublishers: " + ._source.publishers + 
-        "\nGenre: " + ._source.genre + 
-        "\nISWC: " + ._source.iswc + 
-        "\nSource: " + ._source.data_source + 
+        .hits.hits[] |
+        "Score: " + (.score | tostring) +
+        "\nTitle: " + ._source.title +
+        "\nWriters: " + ._source.writers +
+        "\nPublishers: " + ._source.publishers +
+        "\nGenre: " + ._source.genre +
+        "\nISWC: " + ._source.iswc +
+        "\nSource: " + ._source.data_source +
         "\n" + ("=" * 50) + "\n"
     '
 }
@@ -111,7 +111,7 @@ main() {
     echo "Music Rights Vector Similarity Search Test"
     echo "=========================================="
     echo ""
-    
+
     # Test queries for music rights reconciliation
     local test_queries=(
         "Beatles song written by John Lennon and Paul McCartney"
@@ -120,12 +120,12 @@ main() {
         "Beyonce R&B track"
         "Ed Sheeran pop hit"
     )
-    
+
     if [ $# -gt 0 ]; then
         # Use provided query
         local query="$1"
         local k="${2:-5}"
-        
+
         local response
         response=$(vector_search "$query" "$k")
         format_results "$response"
@@ -134,10 +134,10 @@ main() {
         for query in "${test_queries[@]}"; do
             echo "Testing query: '$query'"
             echo "------------------------------"
-            
+
             local response
             response=$(vector_search "$query" 3)
-            
+
             if echo "$response" | jq -e '.hits.hits[0]' >/dev/null 2>&1; then
                 echo "✅ Found matches for: '$query'"
                 format_results "$response"
@@ -146,7 +146,7 @@ main() {
                 echo "❌ No matches found for: '$query'"
                 echo ""
             fi
-            
+
             sleep 1  # Rate limiting
         done
     fi

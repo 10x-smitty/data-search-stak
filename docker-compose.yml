@@ -146,7 +146,7 @@ services:
     volumes:
       - ./data/certs:/usr/share/metricbeat/certs
       - ./data/metricbeat:/usr/share/metricbeat/data
-      - "./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro"
+      - "./metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro"
       - "/proc:/hostfs/proc:ro"
@@ -169,8 +169,8 @@ services:
     volumes:
       - ./data/certs:/usr/share/filebeat/certs
       - ./data/filebeat:/usr/share/filebeat/data
-      - "./filebeat_ingest_data/:/usr/share/filebeat/ingest_data/"
-      - "./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
+      - "./filebeat/ingest-data/:/usr/share/filebeat/ingest_data/"
+      - "./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     environment:
@@ -195,8 +195,8 @@ services:
     volumes:
       - ./data/certs:/usr/share/logstash/certs
       - ./data/logstash:/usr/share/logstash/data
-      - "./logstash_ingest_data/:/usr/share/logstash/ingest_data/"
-      - "./logstash-csv-vector.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
+      - "./logstash/ingest-data/:/usr/share/logstash/ingest_data/"
+      - "./logstash/logstash-csv-vector.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
     environment:
       - xpack.monitoring.enabled=false
       - ELASTIC_USER=elastic
@@ -217,8 +217,8 @@ services:
     volumes:
       - ./data/certs:/usr/share/logstash/certs
       - ./data/logstash-postgres:/usr/share/logstash/data
-      - "./logstash-postgres-simple.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
-      - "./logstash-drivers:/usr/share/logstash/drivers:ro"
+      - "./logstash/logstash-postgres-simple.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
+      - "./logstash/drivers:/usr/share/logstash/drivers:ro"
     environment:
       - xpack.monitoring.enabled=false
       - ELASTIC_USER=elastic
@@ -244,7 +244,7 @@ services:
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - ./postgres:/docker-entrypoint-initdb.d
     mem_limit: ${POSTGRES_MEM_LIMIT}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
