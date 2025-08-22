@@ -232,6 +232,7 @@ services:
 
   postgres:
     image: apache/age:latest
+    platform: linux/amd64
     container_name: postgres-age
     restart: unless-stopped
     ports:
