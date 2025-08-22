@@ -200,7 +200,16 @@ The stack includes powerful data reconciliation capabilities using vector search
 
 ### Getting Started with Reconciliation
 
-1. **Place CSV files** in `logstash_ingest_data/` directory
+**Sample Music Rights Data Included:**
+- **PostgreSQL Database**: Complete music rights schema with songs, writers, publishers, and rights tracking
+- **CSV Files**: ASCAP, BMI, and SESAC catalog exports with variations and formatting differences
+- **Perfect for Testing**: Overlapping songs with different spellings, name orders, and missing data
+
+1. **Start the stack** (includes music rights data):
+   ```bash
+   docker-compose up -d
+   ```
+
 2. **Apply index template**:
    ```bash
    curl -X PUT "https://localhost:9200/_index_template/reconciliation" \
@@ -208,12 +217,30 @@ The stack includes powerful data reconciliation capabilities using vector search
      -u elastic:password -k \
      -d @elasticsearch-templates/reconciliation-template.json
    ```
-3. **Update Logstash configuration** to use reconciliation pipeline:
+
+3. **Data automatically loads**:
+   - PostgreSQL music rights database populates on startup
+   - CSV files process automatically via Logstash
+   - Cross-source reconciliation ready within minutes
+
+4. **Test reconciliation queries**:
    ```bash
-   # Edit docker-compose.yml to use logstash-csv-reconciliation.conf
-   docker-compose restart logstash01
+   # Find similar songs across all sources
+   curl -X GET "https://localhost:9200/reconciliation-*/_search" \
+     -H "Content-Type: application/json" \
+     -u elastic:password -k \
+     -d '{
+       "knn": {
+         "field": "content_vector",
+         "query_vector_builder": {
+           "text_embedding": {
+             "model_text": "Hey Jude Beatles Lennon McCartney"
+           }
+         },
+         "k": 10
+       }
+     }'
    ```
-4. **Use sample queries** from `reconciliation-queries.json` to find matches
 
 ### Sample Queries
 See `reconciliation-queries.json` for example queries including:

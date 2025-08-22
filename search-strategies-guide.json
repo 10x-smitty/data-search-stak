@@ -1,0 +1,212 @@
+{
+  "description": "Different search strategies you can use on the same reconciliation indices",
+  
+  "1_vector_semantic_search": {
+    "description": "Vector similarity search - finds semantically similar records",
+    "use_case": "Fuzzy matching, reconciliation, similar records",
+    "example_query": {
+      "knn": {
+        "field": "content_vector",
+        "query_vector_builder": {
+          "text_embedding": {
+            "model_id": ".elser_model_2",
+            "model_text": "John Smith musician songwriter"
+          }
+        },
+        "k": 10,
+        "num_candidates": 100
+      }
+    },
+    "finds": [
+      "John Smith (songwriter)",
+      "Smith, John (musician)", 
+      "J. Smith - Music Writer",
+      "Johnny Smith, composer"
+    ]
+  },
+
+  "2_traditional_text_search": {
+    "description": "Standard Elasticsearch text search with BM25 scoring",
+    "use_case": "Keyword search, exact phrase matching",
+    "example_query": {
+      "multi_match": {
+        "query": "John Smith songwriter",
+        "fields": ["searchable_content", "normalized_content"],
+        "type": "best_fields"
+      }
+    },
+    "finds": [
+      "Records containing 'John', 'Smith', and 'songwriter'",
+      "Ranked by relevance score"
+    ]
+  },
+
+  "3_exact_field_search": {
+    "description": "Precise field-based search",
+    "use_case": "Filtering by specific criteria, structured queries",
+    "example_query": {
+      "bool": {
+        "must": [
+          {"term": {"name.keyword": "John Smith"}},
+          {"term": {"data_source": "postgresql"}}
+        ]
+      }
+    },
+    "finds": [
+      "Exact matches for specific field values"
+    ]
+  },
+
+  "4_fuzzy_text_search": {
+    "description": "Traditional fuzzy search with typo tolerance",
+    "use_case": "Handle typos, minor spelling variations",
+    "example_query": {
+      "multi_match": {
+        "query": "Jon Smth", 
+        "fields": ["name", "searchable_content"],
+        "fuzziness": "AUTO"
+      }
+    },
+    "finds": [
+      "John Smith (despite typos)",
+      "Jon Smith",
+      "John Smyth"
+    ]
+  },
+
+  "5_wildcard_pattern_search": {
+    "description": "Pattern matching with wildcards",
+    "use_case": "Partial matches, prefix/suffix search",
+    "example_query": {
+      "wildcard": {
+        "searchable_content": "*smith*music*"
+      }
+    },
+    "finds": [
+      "Any record with 'smith' and 'music' anywhere in content"
+    ]
+  },
+
+  "6_aggregation_analytics": {
+    "description": "Data analysis and grouping",
+    "use_case": "Statistics, trends, data exploration",
+    "example_query": {
+      "size": 0,
+      "aggs": {
+        "by_source": {
+          "terms": {"field": "data_source.keyword"}
+        },
+        "by_type": {
+          "terms": {"field": "document_type.keyword"}
+        }
+      }
+    },
+    "finds": [
+      "Count of records by source",
+      "Distribution analysis",
+      "Summary statistics"
+    ]
+  },
+
+  "7_hybrid_combined_search": {
+    "description": "Combine multiple search strategies for best results",
+    "use_case": "Comprehensive search with multiple ranking factors",
+    "example_query": {
+      "bool": {
+        "should": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_text": "John Smith songwriter"
+                }
+              },
+              "k": 5,
+              "boost": 2.0
+            }
+          },
+          {
+            "multi_match": {
+              "query": "John Smith songwriter",
+              "fields": ["searchable_content^1.5", "normalized_content"],
+              "fuzziness": "AUTO",
+              "boost": 1.0
+            }
+          },
+          {
+            "term": {
+              "key_identifiers": {
+                "value": "john.smith@email.com",
+                "boost": 3.0
+              }
+            }
+          }
+        ],
+        "minimum_should_match": 1
+      }
+    },
+    "finds": [
+      "Best combination of semantic similarity, text relevance, and exact matches"
+    ]
+  },
+
+  "8_cross_source_reconciliation": {
+    "description": "Find matching records across different data sources", 
+    "use_case": "Data deduplication, record linking, reconciliation",
+    "example_query": {
+      "bool": {
+        "must": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_text": "{{RECORD_FROM_SOURCE_A}}"
+                }
+              },
+              "k": 10
+            }
+          }
+        ],
+        "must_not": [
+          {"term": {"data_source": "source_a"}}
+        ]
+      }
+    },
+    "finds": [
+      "Similar records from different sources",
+      "Potential duplicates across systems"
+    ]
+  }
+}
+
+// INDEX STRATEGY:
+
+/* 
+YOU DON'T NEED SEPARATE INDICES!
+
+The same reconciliation indices support ALL search types:
+
+✅ reconciliation-*.csv files
+✅ reconciliation-postgresql-*  
+✅ Any other reconciliation-* indices
+
+Each index contains:
+- Original field data (name, email, etc.)
+- Searchable content (combined text)
+- Normalized content (fuzzy matching)  
+- Key identifiers (exact matching)
+- Vector embeddings (semantic search)
+- Source metadata (filtering)
+
+This means ONE INDEX supports:
+1. Vector similarity search
+2. Traditional text search  
+3. Exact field matching
+4. Fuzzy text search
+5. Pattern matching
+6. Analytics/aggregations
+7. Cross-source reconciliation
+8. Any combination of the above
+*/

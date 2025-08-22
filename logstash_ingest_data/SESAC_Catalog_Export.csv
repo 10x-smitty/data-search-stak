@@ -1,0 +1,16 @@
+SESAC_ID,Work_Title,Author_Name,Author_IPI,Publisher_Entity,Publisher_IPI,Performance_Period,Earnings_USD,Distribution_Channel
+SES2024001,Shake It Off - Radio Edit,T. Swift,00450016959,Taylor Swift Music LLC,00567890123,2024-Q1,789.12,Terrestrial Radio
+SES2024002,Shake It Off,Swift T.,00450016959,Taylor Swift Music LLC,00567890123,2024-Q1,456.78,Online Streaming
+SES2024003,Blinding Lights - Extended,Abel Tesfaye,00530022456,XO Publishing,00678901234,2024-Q1,678.90,Digital Download
+SES2024004,Blinding Lights,Tesfaye Abel,00530022456,XO Publishing,00678901234,2024-Q1,345.67,Streaming Platform
+SES2024005,Yesterday,P. McCartney,00026239279,Sony ATV Publishing,00026955529,2024-Q1,123.45,AM/FM Radio
+SES2024006,Yesterday - Love Version,McCartney P.,00026239279,Sony ATV Publishing,00026955529,2024-Q1,67.89,Streaming
+SES2024007,Imagine - Ultimate Mix,J. Lennon,00014107338,Sony ATV Publishing,00026955529,2024-Q1,234.56,Digital Radio
+SES2024008,Imagine,Lennon J.,00014107338,Sony ATV Publishing,00026955529,2024-Q1,123.45,Television Broadcast
+SES2024009,I Don't Want to Miss a Thing,D. Warren,00145380046,Universal Publishing,00138635135,2024-Q1,2000.00,Movie Soundtrack
+SES2024010,I Dont Want to Miss a Thing,Warren Diane,00145380046,Universal Publishing,00138635135,2024-Q1,1500.00,Streaming Service
+SES2024011,Uptown Funk (feat. Bruno Mars),B. Mars,00510020789,Big Machine Publishing,00456789012,2024-Q1,890.12,Music Video Platform
+SES2024012,Uptown Funk,Mars B.,00510020789,Big Machine Publishing,00456789012,2024-Q1,567.89,Radio Play
+SES2024013,Can't Stop the Feeling,Justin Timberlake,00234567890,Universal Music Group,00138635135,2024-Q1,456.78,Film Synchronization
+SES2024014,Cant Stop the Feeling!,J. Timberlake,00234567890,Universal Music Group,00138635135,2024-Q1,234.56,Streaming
+SES2024015,Good 4 U,Olivia Rodrigo,00345678901,Universal Music Publishing,00138635135,2024-Q1,789.01,Digital Streaming

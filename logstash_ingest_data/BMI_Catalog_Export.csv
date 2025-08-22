@@ -1,0 +1,16 @@
+BMI_Work_Number,Song_Title,Composer_Name,Composer_IPI_Number,Publishing_Company,Publisher_IPI_Number,Date_of_Performance,Royalty_Amount,Media_Type
+BMI12001,...Baby One More Time,Max Martin,00500019958,Warner Chappell Music,00052063512,2024-01-19,89.12,Digital
+BMI12002,Uptown Funk,Bruno Mars,00510020789,Big Machine Music,00456789012,2024-01-22,1200.00,Television
+BMI12003,Uptown Funk!,Mars Bruno,00510020789,Big Machine Music,00456789012,2024-01-23,234.56,Radio
+BMI12004,Baby One More Time,Martin Max,00500019958,Warner Music Publishing,00052063512,2024-01-24,123.45,Streaming
+BMI12005,Someone Like You,Adele,00470018234,Universal Music Publishing,00138635135,2024-01-25,890.45,Television
+BMI12006,Someone Like You (Live),Adkins Adele,00470018234,Universal Publishing Group,00138635135,2024-01-26,156.78,Radio
+BMI12007,Hey Jude,Lennon John,00014107338,Sony ATV Music,00026955529,2024-01-27,234.56,Streaming
+BMI12008,Hey Jude - 2018 Mix,McCartney Paul,00026239279,Sony ATV Music,00026955529,2024-01-27,234.56,Streaming
+BMI12009,Blinding Lights,The Weeknd,00530022456,XO Music Publishing,00678901234,2024-01-28,345.67,Digital
+BMI12010,Blinding Lights (Remix),Weeknd Abel,00530022456,XO Music Publishing,00678901234,2024-01-29,123.45,Radio
+BMI12011,Shape of You - Latin Remix,Sheeran Ed,00490019456,Warner Chappell,00052063512,2024-01-30,89.12,Streaming
+BMI12012,Watermelon Sugar,Harry Styles,00567890234,Columbia Records Music,00890123456,2024-02-01,456.78,Digital
+BMI12013,As It Was,H. Styles,00567890234,Columbia Records Music,00890123456,2024-02-02,789.01,Streaming
+BMI12014,Anti-Hero,Swift Taylor,00450016959,Taylor Swift Publishing,00567890123,2024-02-03,1234.56,Digital
+BMI12015,Flowers,Miley Cyrus,00678901345,Columbia Records Music,00890123456,2024-02-04,567.89,Radio

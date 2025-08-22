@@ -1,0 +1,192 @@
+{
+  "description": "Cross-source reconciliation queries between PostgreSQL and CSV data",
+  
+  "match_csv_record_with_postgres": {
+    "description": "Find matching PostgreSQL records for a CSV record",
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2",
+                  "model_text": "{{CSV_RECORD_CONTENT}}"
+                }
+              },
+              "k": 10,
+              "num_candidates": 100
+            }
+          }
+        ],
+        "filter": [
+          {"term": {"source_system": "postgresql"}}
+        ],
+        "should": [
+          {"match": {"normalized_content": {"query": "{{NORMALIZED_TEXT}}", "fuzziness": "AUTO"}}},
+          {"terms": {"*_codes": ["{{EXTRACTED_CODES}}"]}}
+        ]
+      }
+    }
+  },
+  
+  "match_postgres_record_with_csv": {
+    "description": "Find matching CSV records for a PostgreSQL record",
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2",
+                  "model_text": "{{POSTGRES_RECORD_CONTENT}}"
+                }
+              },
+              "k": 10,
+              "num_candidates": 100
+            }
+          }
+        ],
+        "filter": [
+          {"term": {"data_source": "{{CSV_SOURCE_NAME}}"}}
+        ]
+      }
+    }
+  },
+  
+  "hybrid_cross_source_search": {
+    "description": "Combined vector+traditional search across all sources",
+    "query": {
+      "bool": {
+        "should": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2",
+                  "model_text": "{{SEARCH_TEXT}}"
+                }
+              },
+              "k": 5,
+              "num_candidates": 50,
+              "boost": 2.0
+            }
+          },
+          {
+            "multi_match": {
+              "query": "{{FUZZY_SEARCH_TEXT}}",
+              "fields": ["normalized_content^1.5", "searchable_content"],
+              "fuzziness": "AUTO",
+              "boost": 1.0
+            }
+          }
+        ],
+        "minimum_should_match": 1,
+        "filter": [
+          {"term": {"reconciliation_ready": true}}
+        ]
+      }
+    }
+  },
+  
+  "find_matches_by_email": {
+    "description": "Find records with matching email across sources",
+    "query": {
+      "bool": {
+        "should": [
+          {"wildcard": {"key_identifiers": "*email*{{EMAIL}}*"}},
+          {"wildcard": {"normalized_content": "*email*{{EMAIL}}*"}}
+        ],
+        "minimum_should_match": 1
+      }
+    }
+  },
+  
+  "music_rights_example": {
+    "description": "Match song between database and CSV with fuzzy title/artist",
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2",
+                  "model_text": "Song: {{SONG_TITLE}}, Artist: {{ARTIST_NAME}}, Writer: {{WRITER_NAME}}"
+                }
+              },
+              "k": 20,
+              "num_candidates": 100
+            }
+          }
+        ],
+        "should": [
+          {"match": {"normalized_content": {"query": "{{SONG_TITLE}}", "boost": 3.0}}},
+          {"match": {"normalized_content": {"query": "{{ARTIST_NAME}}", "boost": 2.0}}},
+          {"wildcard": {"key_identifiers": "*ipi*{{IPI_NUMBER}}*"}}
+        ]
+      }
+    }
+  },
+  
+  "cross_source_aggregation": {
+    "description": "Analyze reconciliation matches across sources",
+    "size": 0,
+    "query": {
+      "match_all": {}
+    },
+    "aggs": {
+      "by_source": {
+        "terms": {
+          "field": "data_source.keyword"
+        },
+        "aggs": {
+          "by_system": {
+            "terms": {
+              "field": "source_system.keyword",
+              "missing": "unknown"
+            }
+          },
+          "match_count": {
+            "cardinality": {
+              "field": "searchable_content.keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// EXAMPLE USAGE SCENARIOS:
+
+/* 
+1. DATABASE-CSV MATCHING:
+
+   - You have customer records in PostgreSQL database
+   - You receive a CSV file with similar/related customer data from another system
+   - Query: Find database customers that match CSV imports
+
+2. MUSIC RIGHTS RECONCILIATION:
+
+   - Database: ASCAP catalog data (songs, writers, publishers)
+   - CSV import: BMI catalog data (songs, writers, publishers)
+   - Query: Match songs across PROs even with spelling/format differences
+   
+3. PROGRESSIVE ENRICHMENT:
+
+   - Start with skeletal database records
+   - CSV files provide additional details to complete records
+   - Query: Match and merge data across sources
+   
+4. DATA QUALITY ASSESSMENT:
+
+   - Use cross-source matching to find data discrepancies
+   - Identify missing or conflicting information
+   - Query: Aggregate reconciliation results to quantify match rates
+*/
