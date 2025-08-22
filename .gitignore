@@ -1,6 +1,9 @@
 # Data directories - contains persistent database and application data
 data/
 
+# JDBC drivers (can be re-downloaded)
+logstash-drivers/
+
 # Environment files with potential secrets
 .env.local
 .env.*.local
