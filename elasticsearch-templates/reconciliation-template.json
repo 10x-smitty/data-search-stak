@@ -1,0 +1,148 @@
+{
+  "index_patterns": ["reconciliation-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index": {
+        "default_pipeline": "vector-embeddings-pipeline"
+      },
+      "analysis": {
+        "normalizer": {
+          "fuzzy_normalizer": {
+            "type": "custom",
+            "char_filter": [],
+            "filter": ["lowercase", "asciifolding"]
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": true,
+      "dynamic_templates": [
+        {
+          "strings_as_searchable": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "fuzzy": {
+                  "type": "keyword",
+                  "normalizer": "fuzzy_normalizer"
+                }
+              }
+            }
+          }
+        },
+        {
+          "normalized_names": {
+            "match": "*_normalized",
+            "mapping": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        {
+          "extracted_codes": {
+            "match": "*_codes",
+            "mapping": {
+              "type": "keyword"
+            }
+          }
+        },
+        {
+          "parsed_dates": {
+            "match": "*_parsed",
+            "mapping": {
+              "type": "date"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "data_source": {
+          "type": "keyword"
+        },
+        "source_file": {
+          "type": "keyword"
+        },
+        "filename": {
+          "type": "keyword"
+        },
+        "csv_fields": {
+          "type": "keyword"
+        },
+        "field_count": {
+          "type": "integer"
+        },
+        "document_type": {
+          "type": "keyword"
+        },
+        "reconciliation_ready": {
+          "type": "boolean"
+        },
+        "has_key_identifiers": {
+          "type": "boolean"
+        },
+        "searchable_content": {
+          "type": "text",
+          "analyzer": "standard",
+          "fields": {
+            "fuzzy": {
+              "type": "text",
+              "analyzer": "simple"
+            }
+          }
+        },
+        "normalized_content": {
+          "type": "text",
+          "analyzer": "simple",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "normalizer": "fuzzy_normalizer"
+            }
+          }
+        },
+        "key_identifiers": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "vector_strategy": {
+          "type": "keyword"
+        },
+        "embed_field": {
+          "type": "keyword"
+        },
+        "content_vector": {
+          "type": "dense_vector",
+          "dims": 384,
+          "index": true,
+          "similarity": "cosine"
+        }
+      }
+    }
+  },
+  "priority": 600,
+  "composed_of": [],
+  "version": 1,
+  "_meta": {
+    "description": "Template optimized for data reconciliation with fuzzy matching capabilities. Includes normalized content, key identifiers extraction, and multiple search strategies for finding similar records across different data sources."
+  }
+}

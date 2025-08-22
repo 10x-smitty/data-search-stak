@@ -1,0 +1,81 @@
+{
+  "index_patterns": ["csv-vector-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index": {
+        "default_pipeline": "vector-embeddings-pipeline"
+      }
+    },
+    "mappings": {
+      "dynamic": true,
+      "dynamic_templates": [
+        {
+          "strings_as_keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            }
+          }
+        },
+        {
+          "parsed_dates": {
+            "match": "*_parsed",
+            "mapping": {
+              "type": "date"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "source_file": {
+          "type": "keyword"
+        },
+        "filename": {
+          "type": "keyword"
+        },
+        "csv_fields": {
+          "type": "keyword"
+        },
+        "field_count": {
+          "type": "integer"
+        },
+        "document_type": {
+          "type": "keyword"
+        },
+        "searchable_content": {
+          "type": "text",
+          "analyzer": "standard"
+        },
+        "vector_strategy": {
+          "type": "keyword"
+        },
+        "embed_field": {
+          "type": "keyword"
+        },
+        "content_vector": {
+          "type": "dense_vector",
+          "dims": 384,
+          "index": true,
+          "similarity": "cosine"
+        }
+      }
+    }
+  },
+  "priority": 500,
+  "composed_of": [],
+  "version": 1,
+  "_meta": {
+    "description": "Generic template for CSV data with vector embeddings for semantic search. Each CSV row becomes an individual searchable document."
+  }
+}

@@ -174,6 +174,53 @@ data/
 4. **Set Up Index Templates**: Define mappings for your data types
 5. **Configure Monitoring**: Set up alerts and monitoring rules
 6. **Explore Graph Database**: Use Apache AGE for graph data modeling and queries
+7. **Set Up Data Reconciliation**: Use vector search for fuzzy matching and duplicate detection
+
+## CSV Data Reconciliation & Vector Search
+
+The stack includes powerful data reconciliation capabilities using vector search - perfect for "fuzzy matching on steroids":
+
+### Features
+- **Row-by-Row Processing**: Each CSV row becomes an individual searchable document
+- **Cross-Source Matching**: Find similar records across different data sources (e.g., different PROs)
+- **Fuzzy Name Matching**: Handles variations like "John Smith" vs "Smith, John" vs "J. Smith"
+- **Missing Data Tolerance**: Can match records even with incomplete information
+- **ID Reconciliation**: Extracts and matches IPI numbers, codes, and identifiers
+- **Normalized Content**: Multiple searchable content formats for better matching
+
+### Configuration Options
+1. **Generic CSV Processing** (`logstash-csv-vector.conf`): Works with any CSV structure
+2. **Reconciliation-Optimized** (`logstash-csv-reconciliation.conf`): Enhanced for data matching
+
+### Use Cases
+- **Music Rights Data**: Match songs across ASCAP, BMI, SESAC databases
+- **Customer Records**: Find duplicate customers with different spellings/formats
+- **Product Catalogs**: Match products across different vendor systems
+- **Financial Records**: Reconcile transactions across multiple sources
+
+### Getting Started with Reconciliation
+
+1. **Place CSV files** in `logstash_ingest_data/` directory
+2. **Apply index template**:
+   ```bash
+   curl -X PUT "https://localhost:9200/_index_template/reconciliation" \
+     -H "Content-Type: application/json" \
+     -u elastic:password -k \
+     -d @elasticsearch-templates/reconciliation-template.json
+   ```
+3. **Update Logstash configuration** to use reconciliation pipeline:
+   ```bash
+   # Edit docker-compose.yml to use logstash-csv-reconciliation.conf
+   docker-compose restart logstash01
+   ```
+4. **Use sample queries** from `reconciliation-queries.json` to find matches
+
+### Sample Queries
+See `reconciliation-queries.json` for example queries including:
+- Vector similarity search for finding duplicates
+- Hybrid traditional + vector search  
+- Cross-source reconciliation
+- Exact ID matching
 
 ## Troubleshooting
 

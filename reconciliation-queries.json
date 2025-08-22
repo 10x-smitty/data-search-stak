@@ -1,0 +1,158 @@
+{
+  "description": "Sample queries for music rights data reconciliation using vector similarity search",
+  
+  "find_similar_songs_by_vector": {
+    "description": "Find similar records using vector similarity (main reconciliation query)",
+    "query": {
+      "knn": {
+        "field": "content_vector",
+        "query_vector_builder": {
+          "text_embedding": {
+            "model_id": ".elser_model_2",
+            "model_text": "{{SEARCH_RECORD_CONTENT}}"
+          }
+        },
+        "k": 10,
+        "num_candidates": 100,
+        "filter": {
+          "bool": {
+            "must_not": [
+              {"term": {"data_source": "{{EXCLUDE_SAME_SOURCE}}"}}
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "hybrid_search_with_traditional_and_vector": {
+    "description": "Combine traditional fuzzy search with vector similarity for best results",
+    "query": {
+      "bool": {
+        "should": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2", 
+                  "model_text": "{{SEARCH_RECORD_CONTENT}}"
+                }
+              },
+              "k": 5,
+              "num_candidates": 50,
+              "boost": 2.0
+            }
+          },
+          {
+            "multi_match": {
+              "query": "{{FUZZY_SEARCH_TEXT}}",
+              "fields": ["normalized_content^1.5", "searchable_content"],
+              "fuzziness": "AUTO",
+              "boost": 1.0
+            }
+          },
+          {
+            "match": {
+              "key_identifiers": {
+                "query": "{{KEY_IDENTIFIERS}}",
+                "boost": 3.0
+              }
+            }
+          }
+        ],
+        "minimum_should_match": 1,
+        "filter": [
+          {"term": {"reconciliation_ready": true}}
+        ]
+      }
+    }
+  },
+
+  "find_exact_id_matches": {
+    "description": "Find records with matching IPI numbers or other exact identifiers",
+    "query": {
+      "bool": {
+        "should": [
+          {"term": {"key_identifiers.keyword": "{{EXACT_ID}}"}},
+          {"wildcard": {"*_codes": "{{IPI_NUMBER}}"}}
+        ],
+        "filter": [
+          {"term": {"has_key_identifiers": true}}
+        ]
+      }
+    }
+  },
+
+  "cross_source_reconciliation": {
+    "description": "Find potential matches across different PRO sources",
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "knn": {
+              "field": "content_vector",
+              "query_vector_builder": {
+                "text_embedding": {
+                  "model_id": ".elser_model_2",
+                  "model_text": "{{RECORD_TO_MATCH}}"
+                }
+              },
+              "k": 20,
+              "num_candidates": 100
+            }
+          }
+        ],
+        "must_not": [
+          {"term": {"data_source": "{{ORIGINAL_SOURCE}}"}}
+        ],
+        "should": [
+          {"match": {"normalized_content": {"query": "{{NORMALIZED_TEXT}}", "fuzziness": "AUTO"}}},
+          {"terms": {"*_codes": ["{{EXTRACTED_CODES}}"]}}
+        ]
+      }
+    }
+  },
+
+  "reconciliation_aggregation": {
+    "description": "Group potential duplicates by similarity clusters",
+    "query": {
+      "match_all": {}
+    },
+    "aggs": {
+      "by_source": {
+        "terms": {"field": "data_source"},
+        "aggs": {
+          "similar_groups": {
+            "significant_terms": {
+              "field": "normalized_content.keyword",
+              "size": 50
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Example usage scenarios:
+
+// 1. FINDING DUPLICATES ACROSS PROS:
+// Upload ASCAP.csv and BMI.csv files
+// Use "cross_source_reconciliation" query to find similar songs
+
+// 2. RECONCILING WRITER NAMES:
+// "John Smith" in ASCAP vs "Smith, John" in BMI vs "J. Smith" in SESAC
+// Vector similarity will catch these variations
+
+// 3. MATCHING BY IPI NUMBERS:
+// Use "find_exact_id_matches" when you have IPI or other unique identifiers
+
+// 4. FUZZY SONG TITLES:
+// "Love Me Tender" vs "Love Me Tender (Remastered)" vs "Lv Me Tender"
+// Vector search handles variations, missing words, typos
+
+// 5. INCOMPLETE DATA MATCHING:
+// Record A: Song="Hello", Writer="Adele", IPI=missing
+// Record B: Song="Hello", Writer=missing, IPI="00123456789"  
+// Vector similarity can still match based on available fields
