@@ -217,7 +217,7 @@ services:
     volumes:
       - ./data/certs:/usr/share/logstash/certs
       - ./data/logstash:/usr/share/logstash/data
-      - "./logstash-postgres-simple.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
+      - "./logstash-postgres-vector.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
       - "./logstash-drivers:/usr/share/logstash/drivers:ro"
     environment:
       - xpack.monitoring.enabled=false
